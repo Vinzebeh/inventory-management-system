@@ -54,7 +54,7 @@
 				} else {
 					// Start inserting user to DB
 					// Encrypt the password
-					$hashedPassword = md5($registerPassword1);
+					$hashedPassword = password_hash($registerPassword1, PASSWORD_DEFAULT);
 					$insertUserSql = 'INSERT INTO user(fullName, username, password) VALUES(:fullName, :username, :password)';
 					$insertUserStatement = $conn->prepare($insertUserSql);
 					$insertUserStatement->execute(['fullName' => $registerFullName, 'username' => $registerUsername, 'password' => $hashedPassword]);
