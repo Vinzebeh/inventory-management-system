@@ -1,5 +1,5 @@
 $(document).ready(function(){
-	
+
 	// Listen to register button
 	$('#register').on('click', function(){
 		register();
@@ -28,13 +28,18 @@ function register(){
 		url: 'model/login/register.php',
 		method: 'POST',
 		data: {
-			registerFullName:registerFullName,
-			registerUsername:registerUsername,
-			registerPassword1:registerPassword1,
-			registerPassword2:registerPassword2,
+			registerFullName: registerFullName,
+			registerUsername: registerUsername,
+			registerPassword1: registerPassword1,
+			registerPassword2: registerPassword2
 		},
 		success: function(data){
-			$('#registerMessage').html(data);
+			/*
+				DOM-XSS mitigation:
+				Use .text() instead of .html() so the response is rendered
+				as plain text and not interpreted as HTML by the browser.
+			*/
+			$('#registerMessage').text(data);
 		}
 	});
 }
@@ -50,12 +55,16 @@ function resetPassword(){
 		url: 'model/login/resetPassword.php',
 		method: 'POST',
 		data: {
-			resetPasswordUsername:resetPasswordUsername,
-			resetPasswordPassword1:resetPasswordPassword1,
-			resetPasswordPassword2:resetPasswordPassword2,
+			resetPasswordUsername: resetPasswordUsername,
+			resetPasswordPassword1: resetPasswordPassword1,
+			resetPasswordPassword2: resetPasswordPassword2
 		},
 		success: function(data){
-			$('#resetPasswordMessage').html(data);
+			/*
+				DOM-XSS mitigation:
+				Do not place remote response data into .html().
+			*/
+			$('#resetPasswordMessage').text(data);
 		}
 	});
 }
@@ -70,11 +79,15 @@ function login(){
 		url: 'model/login/checkLogin.php',
 		method: 'POST',
 		data: {
-			loginUsername:loginUsername,
-			loginPassword:loginPassword,
+			loginUsername: loginUsername,
+			loginPassword: loginPassword
 		},
 		success: function(data){
-			$('#loginMessage').html(data);
+			/*
+				DOM-XSS mitigation:
+				Render server response as text instead of HTML.
+			*/
+			$('#loginMessage').text(data);
 			
 			if(data.indexOf('Redirecting') >= 0){
 				window.location = 'index.php';
