@@ -4,10 +4,7 @@
 	
 	if (isset($_POST['itemImageItemNumber'])) {
 	
-	    // Base upload directory
 	    $baseImageFolder = '../../data/item_images/';
-	
-	    // Resolve the real absolute path of the base folder
 	    $baseImageFolderRealPath = realpath($baseImageFolder);
 	
 	    if ($baseImageFolderRealPath === false) {
@@ -15,7 +12,6 @@
 	        exit();
 	    }
 	
-	    // Get item number from user input
 	    $itemImageItemNumber = trim($_POST['itemImageItemNumber']);
 	
 	    if (empty($itemImageItemNumber)) {
@@ -23,27 +19,22 @@
 	        exit();
 	    }
 	
-	    /*
-	        Path traversal mitigation:
-	        Only allow safe item number characters.
-	        This prevents values such as ../../, ../, slashes, backslashes, and special path characters.
-	    */
+	    // Validate item number format before using it in database queries
 	    if (!preg_match('/^[a-zA-Z0-9_-]+$/', $itemImageItemNumber)) {
 	        echo '<div class="alert alert-danger"><button type="button" class="close" data-dismiss="alert">&times;</button>Invalid item number format.</div>';
 	        exit();
 	    }
 	
-	    // Check if the user has selected an image
 	    if (
 	        !isset($_FILES['itemImageFile']) ||
 	        $_FILES['itemImageFile']['error'] !== UPLOAD_ERR_OK ||
-	        $_FILES['itemImageFile']['name'] == ''
+	        $_FILES['itemImageFile']['name'] === ''
 	    ) {
 	        echo '<div class="alert alert-danger"><button type="button" class="close" data-dismiss="alert">&times;</button>Please select a valid image.</div>';
 	        exit();
 	    }
 	
-	    // Check if itemNumber is in DB
+	    // Check if itemNumber exists in DB
 	    $itemNumberSql = 'SELECT itemNumber FROM item WHERE itemNumber = :itemNumber';
 	    $itemNumberStatement = $conn->prepare($itemNumberSql);
 	    $itemNumberStatement->execute(['itemNumber' => $itemImageItemNumber]);
@@ -53,7 +44,7 @@
 	        exit();
 	    }
 	
-	    // Validate file extension
+	    // Validate extension
 	    $originalFileName = $_FILES['itemImageFile']['name'];
 	    $extension = strtolower(pathinfo($originalFileName, PATHINFO_EXTENSION));
 	
@@ -64,7 +55,7 @@
 	        exit();
 	    }
 	
-	    // Validate MIME type using server-side file inspection
+	    // Validate MIME type using actual file content
 	    $allowedMimeTypes = [
 	        'jpg'  => 'image/jpeg',
 	        'jpeg' => 'image/jpeg',
@@ -80,7 +71,7 @@
 	        exit();
 	    }
 	
-	    // Optional file size limit: 2MB
+	    // Limit file size to 2MB
 	    $maxFileSize = 2 * 1024 * 1024;
 	
 	    if ($_FILES['itemImageFile']['size'] > $maxFileSize) {
@@ -88,50 +79,29 @@
 	        exit();
 	    }
 	
-	    /*
-	        Generate a safe server-side filename.
-	        Do not trust the original uploaded filename because it may contain path tricks.
-	    */
-	    $fileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
-	
-	    // Build item image folder path
-	    $itemImageFolder = $baseImageFolderRealPath . DIRECTORY_SEPARATOR . $itemImageItemNumber;
+	    // Generate server-controlled filename
+	    $fileName = time() . '_' . bin2hex(random_bytes(16)) . '.' . $extension;
 	
 	    /*
-	        Extra path traversal protection:
-	        Check that the final folder still stays inside the allowed base upload directory.
-	    */
-	    $parentFolder = dirname($itemImageFolder);
-	    $parentFolderRealPath = realpath($parentFolder);
+	        Important fix:
+	        The target path is now built only from:
+	        1. trusted fixed base directory
+	        2. server-generated filename
 	
-	    if ($parentFolderRealPath === false || strpos($parentFolderRealPath, $baseImageFolderRealPath) !== 0) {
+	        No HTTP parameter is used in the filesystem path.
+	    */
+	    $targetPath = $baseImageFolderRealPath . DIRECTORY_SEPARATOR . $fileName;
+	
+	    // Final safety check: make sure final path remains inside the upload directory
+	    $targetDirectoryRealPath = realpath(dirname($targetPath));
+	
+	    if ($targetDirectoryRealPath === false || strpos($targetDirectoryRealPath, $baseImageFolderRealPath) !== 0) {
 	        echo '<div class="alert alert-danger"><button type="button" class="close" data-dismiss="alert">&times;</button>Invalid upload path.</div>';
 	        exit();
 	    }
 	
-	    // Create image folder if it does not exist
-	    if (!is_dir($itemImageFolder)) {
-	        if (!mkdir($itemImageFolder, 0755, true)) {
-	            echo '<div class="alert alert-danger"><button type="button" class="close" data-dismiss="alert">&times;</button>Could not create image folder.</div>';
-	            exit();
-	        }
-	    }
-	
-	    // Resolve real path after folder creation
-	    $itemImageFolderRealPath = realpath($itemImageFolder);
-	
-	    if ($itemImageFolderRealPath === false || strpos($itemImageFolderRealPath, $baseImageFolderRealPath) !== 0) {
-	        echo '<div class="alert alert-danger"><button type="button" class="close" data-dismiss="alert">&times;</button>Invalid upload directory.</div>';
-	        exit();
-	    }
-	
-	    // Final target path
-	    $targetPath = $itemImageFolderRealPath . DIRECTORY_SEPARATOR . $fileName;
-	
-	    // Upload file to server
 	    if (move_uploaded_file($_FILES['itemImageFile']['tmp_name'], $targetPath)) {
 	
-	        // Update image url in item table
 	        $updateImageUrlSql = 'UPDATE item SET imageURL = :imageURL WHERE itemNumber = :itemNumber';
 	        $updateImageUrlStatement = $conn->prepare($updateImageUrlSql);
 	        $updateImageUrlStatement->execute([
