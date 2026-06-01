@@ -104,6 +104,118 @@ purchaseFilteredReportCreatorFile = 'model/purchase/purchaseFilteredReportTableC
 saleFilteredReportCreatorFile = 'model/sale/saleFilteredReportTableCreator.php';
 
 
+// Safely render server-generated HTML only after sanitization
+function setSafeHTML(selector, htmlContent) {
+	var target = $(selector);
+	target.empty();
+
+	if (typeof DOMPurify === 'undefined') {
+		target.text(String(htmlContent || ''));
+		return;
+	}
+
+	var cleanFragment = DOMPurify.sanitize(String(htmlContent || ''), {
+		RETURN_DOM_FRAGMENT: true
+	});
+
+	target.append(cleanFragment);
+}
+
+
+// Safely render server-generated HTML by element ID
+function setSafeHTMLByID(elementID, htmlContent) {
+	setSafeHTML('#' + elementID, htmlContent);
+}
+
+
+// Safely render plain text
+function setSafeText(selector, textContent) {
+	$(selector).text(String(textContent || ''));
+}
+
+
+// Safely update DataTable footer values
+function setFooterText(footerCell, currentValue, totalValue) {
+	$(footerCell).text(String(currentValue) + ' (' + String(totalValue) + ' total)');
+}
+
+
+// Validate image filename before using it in src
+function getSafeImagePath(imageURL) {
+	var defaultImage = 'data/item_images/imageNotAvailable.jpg';
+
+	if (!imageURL || imageURL === 'imageNotAvailable.jpg') {
+		return defaultImage;
+	}
+
+	// Allow only safe server-generated filenames
+	if (!/^[a-zA-Z0-9._-]+$/.test(imageURL)) {
+		return defaultImage;
+	}
+
+	// Match the fixed upload directory used in updateImage.php
+	return 'data/item_images/' + imageURL;
+}
+
+
+// Safely render an image without building raw HTML strings
+function setSafeImage(containerSelector, imageURL) {
+	var imagePath = getSafeImagePath(imageURL);
+
+	$(containerSelector)
+		.empty()
+		.append(
+			$('<img>', {
+				class: 'img-fluid',
+				src: imagePath,
+				alt: 'Item image'
+			})
+		);
+}
+
+
+// Safely render suggestion list items without injecting raw HTML
+function renderSafeSuggestions(suggestionsDivID, responseData) {
+	var suggestionsDiv = $('#' + suggestionsDivID);
+	suggestionsDiv.empty();
+
+	var suggestionListIDs = {
+		itemDetailsItemNameSuggestionsDiv: 'itemDetailsItemNamesSuggestionsList',
+		itemDetailsItemNumberSuggestionsDiv: 'itemDetailsItemNumberSuggestionsList',
+		itemImageItemNumberSuggestionsDiv: 'itemImageItemNumberSuggestionsList',
+		purchaseDetailsItemNumberSuggestionsDiv: 'purchaseDetailsItemNumberSuggestionsList',
+		saleDetailsItemNumberSuggestionsDiv: 'saleDetailsItemNumberSuggestionsList',
+		customerDetailsCustomerIDSuggestionsDiv: 'customerDetailsCustomerIDSuggestionsList',
+		saleDetailsCustomerIDSuggestionsDiv: 'saleDetailsCustomerIDSuggestionsList',
+		vendorDetailsVendorIDSuggestionsDiv: 'vendorDetailsVendorIDSuggestionsList',
+		purchaseDetailsPurchaseIDSuggestionsDiv: 'purchaseDetailsPurchaseIDSuggestionsList',
+		saleDetailsSaleIDSuggestionsDiv: 'saleDetailsSaleIDSuggestionsList'
+	};
+
+	var listID = suggestionListIDs[suggestionsDivID];
+
+	if (!listID) {
+		return;
+	}
+
+	var safeList = $('<ul></ul>', {
+		id: listID,
+		class: 'suggestionsList'
+	});
+
+	var parsedResponse = $.parseHTML(String(responseData || ''), document, false);
+
+	$(parsedResponse).find('li').addBack('li').each(function () {
+		var suggestionText = $(this).text().trim();
+
+		if (suggestionText !== '') {
+			$('<li></li>').text(suggestionText).appendTo(safeList);
+		}
+	});
+
+	suggestionsDiv.append(safeList);
+}
+
 
 $(document).ready(function(){
 	// Style the dropdown boxes. You need to explicitly set the width 
