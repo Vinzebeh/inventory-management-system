@@ -43,7 +43,7 @@
 				} else {
 					// Start UPDATING password to DB
 					// Encrypt the password
-					$hashedPassword = md5($resetPasswordPassword1);
+					$hashedPassword = password_hash($resetPasswordPassword1, PASSWORD_DEFAULT);
 					$updatePasswordSql = 'UPDATE user SET password = :password WHERE username = :username';
 					$updatePasswordStatement = $conn->prepare($updatePasswordSql);
 					$updatePasswordStatement->execute(['password' => $hashedPassword, 'username' => $resetPasswordUsername]);
