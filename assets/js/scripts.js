@@ -516,14 +516,21 @@ $(document).ready(function(){
 	
 	// Initiate popovers
 	$(document).on('mouseover', '.itemDetailsHover', function(){
-		// Create item details popover boxes
 		$('.itemDetailsHover').popover({
 			container: 'body',
 			title: 'Item Details',
 			trigger: 'hover',
 			html: true,
 			placement: 'right',
-			content: fetchData
+			content: function(){
+				var popoverContent = fetchData();
+	
+				if (typeof DOMPurify === 'undefined') {
+					return String(popoverContent || '');
+				}
+	
+				return DOMPurify.sanitize(String(popoverContent || ''));
+			}
 		});
 	});
 	
@@ -805,8 +812,7 @@ function filteredSaleReportTableCreator(startDate, endDate, scriptPath, tableDIV
 			endDate:endDate,
 		},
 		success: function(data){
-			$('#' + tableDIV).empty();
-			$('#' + tableDIV).html(data);
+			setSafeHTMLByID(tableDIV, data);
 		},
 		complete: function(){
 			// Initiate the Datatable plugin once the table is added to the DOM
@@ -902,8 +908,7 @@ function filteredPurchaseReportTableCreator(startDate, endDate, scriptPath, tabl
 			endDate:endDate,
 		},
 		success: function(data){
-			$('#' + tableDIV).empty();
-			$('#' + tableDIV).html(data);
+			setSafeHTMLByID(tableDIV, data);
 		},
 		complete: function(){
 			// Initiate the Datatable plugin once the table is added to the DOM
@@ -1219,14 +1224,7 @@ function getItemDetailsToPopulate(){
 			$('#itemDetailsDescription').val(data.description);
 			$('#itemDetailsStatus').val(data.status).trigger("chosen:updated");
 
-			newImgUrl = 'data/item_images/' + data.itemNumber + '/' + data.imageURL;
-			
-			// Set the item image
-			if(data.imageURL == 'imageNotAvailable.jpg' || data.imageURL == ''){
-				$('#imageContainer').html(defaultImageData);
-			} else {
-				$('#imageContainer').html('<img class="img-fluid" src="' + newImgUrl + '">');
-			}
+			setSafeImage('#imageContainer', data.imageURL);
 		}
 	});
 }
@@ -1254,14 +1252,7 @@ function getItemDetailsToPopulateForSaleTab(){
 			$('#saleDetailsTotalStock').val(data.stock);
 			$('#saleDetailsUnitPrice').val(data.unitPrice);
 
-			newImgUrl = 'data/item_images/' + data.itemNumber + '/' + data.imageURL;
-			
-			// Set the item image
-			if(data.imageURL == 'imageNotAvailable.jpg' || data.imageURL == ''){
-				$('#saleDetailsImageContainer').html(defaultImageData);
-			} else {
-				$('#saleDetailsImageContainer').html('<img class="img-fluid" src="' + newImgUrl + '">');
-			}
+			setSafeImage('#saleDetailsImageContainer', data.imageURL);
 		},
 		complete: function() {
 			//$('#saleDetailsDiscount, #saleDetailsQuantity, #saleDetailsUnitPrice').trigger('change');
@@ -1383,10 +1374,8 @@ function renderSafeSuggestions(suggestionsDivID, responseData) {
 
 // Function to show suggestions
 function showSuggestions(textBoxID, scriptPath, suggestionsDivID){
-	// Get the value entered by the user
 	var textBoxValue = $('#' + textBoxID).val();
 	
-	// Call the suggestion script only if there is a value in the textbox
 	if(textBoxValue != ''){
 		$.ajax({
 			url: scriptPath,
@@ -1394,13 +1383,6 @@ function showSuggestions(textBoxID, scriptPath, suggestionsDivID){
 			data: {textBoxValue:textBoxValue},
 			success: function(data){
 				$('#' + suggestionsDivID).fadeIn();
-
-				/*
-					DOM-XSS mitigation:
-					Do not insert remote response data using .html().
-					Instead, rebuild the suggestion list using safe DOM creation
-					and .text() for each suggestion item.
-				*/
 				renderSafeSuggestions(suggestionsDivID, data);
 			}
 		});
