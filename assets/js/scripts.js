@@ -1214,13 +1214,66 @@ function populateLastInsertedID(scriptPath, textBoxID){
 }
 
 
+// Function to safely render suggestion list items without using .html()
+function renderSafeSuggestions(suggestionsDivID, responseData) {
+	var suggestionsDiv = $('#' + suggestionsDivID);
+
+	// Clear previous suggestions safely
+	suggestionsDiv.empty();
+
+	/*
+		Map the suggestion container div to the expected suggestion list ID.
+		These IDs are used by the existing click handlers in scripts.js.
+	*/
+	var suggestionListIDs = {
+		itemDetailsItemNameSuggestionsDiv: 'itemDetailsItemNamesSuggestionsList',
+		itemDetailsItemNumberSuggestionsDiv: 'itemDetailsItemNumberSuggestionsList',
+		itemImageItemNumberSuggestionsDiv: 'itemImageItemNumberSuggestionsList',
+		purchaseDetailsItemNumberSuggestionsDiv: 'purchaseDetailsItemNumberSuggestionsList',
+		saleDetailsItemNumberSuggestionsDiv: 'saleDetailsItemNumberSuggestionsList',
+		customerDetailsCustomerIDSuggestionsDiv: 'customerDetailsCustomerIDSuggestionsList',
+		saleDetailsCustomerIDSuggestionsDiv: 'saleDetailsCustomerIDSuggestionsList',
+		vendorDetailsVendorIDSuggestionsDiv: 'vendorDetailsVendorIDSuggestionsList',
+		purchaseDetailsPurchaseIDSuggestionsDiv: 'purchaseDetailsPurchaseIDSuggestionsList',
+		saleDetailsSaleIDSuggestionsDiv: 'saleDetailsSaleIDSuggestionsList'
+	};
+
+	var listID = suggestionListIDs[suggestionsDivID];
+
+	if (!listID) {
+		return;
+	}
+
+	var safeList = $('<ul></ul>', {
+		id: listID,
+		class: 'suggestionsList'
+	});
+
+	/*
+		The server response may contain HTML such as <ul><li>ITEM001</li></ul>.
+		Instead of injecting that HTML into the page, parse it in memory,
+		extract only the text from each <li>, and create new safe <li> nodes.
+	*/
+	var parsedResponse = $.parseHTML(responseData, document, false);
+
+	$(parsedResponse).find('li').addBack('li').each(function () {
+		var suggestionText = $(this).text().trim();
+
+		if (suggestionText !== '') {
+			$('<li></li>').text(suggestionText).appendTo(safeList);
+		}
+	});
+
+	suggestionsDiv.append(safeList);
+}
+
+
 // Function to show suggestions
 function showSuggestions(textBoxID, scriptPath, suggestionsDivID){
 	// Get the value entered by the user
 	var textBoxValue = $('#' + textBoxID).val();
 	
-	// Call the showPurchaseIDs.php script only if there is a value in the
-	// purchase ID textbox
+	// Call the suggestion script only if there is a value in the textbox
 	if(textBoxValue != ''){
 		$.ajax({
 			url: scriptPath,
@@ -1228,7 +1281,14 @@ function showSuggestions(textBoxID, scriptPath, suggestionsDivID){
 			data: {textBoxValue:textBoxValue},
 			success: function(data){
 				$('#' + suggestionsDivID).fadeIn();
-				$('#' + suggestionsDivID).html(data);
+
+				/*
+					DOM-XSS mitigation:
+					Do not insert remote response data using .html().
+					Instead, rebuild the suggestion list using safe DOM creation
+					and .text() for each suggestion item.
+				*/
+				renderSafeSuggestions(suggestionsDivID, data);
 			}
 		});
 	}
