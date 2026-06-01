@@ -579,6 +579,7 @@ function fetchData(){
 function processImage(imageFormID, scriptPath, messageDivID){
 	var form = $('#' + imageFormID)[0];
 	var formData = new FormData(form);
+
 	$.ajax({
 		url: scriptPath,
 		method: 'POST',
@@ -586,7 +587,7 @@ function processImage(imageFormID, scriptPath, messageDivID){
 		contentType: false,
 		processData: false,
 		success: function(data){
-			$('#' + messageDivID).html(data);
+			setSafeHTMLByID(messageDivID, data);
 		}
 	});
 }
@@ -698,9 +699,9 @@ function reportsPurchaseTableCreator(tableContainerDiv, tableCreatorFileUrl, tab
 					}, 0 );
 	 
 				// Update footer columns
-				$( api.column( 6 ).footer() ).html(quantityFilteredTotal +' ('+ quantityTotal +' total)');
-				$( api.column( 7 ).footer() ).html(unitPriceFilteredTotal +' ('+ unitPriceTotal +' total)');
-				$( api.column( 8 ).footer() ).html(fullPriceFilteredTotal +' ('+ fullPriceTotal +' total)');
+				setFooterText(api.column(6).footer(), quantityFilteredTotal, quantityTotal);
+				setFooterText(api.column(7).footer(), unitPriceFilteredTotal, unitPriceTotal);
+				setFooterText(api.column(8).footer(), fullPriceFilteredTotal, fullPriceTotal);
 			}
 		});
 	});
@@ -782,9 +783,9 @@ function reportsSaleTableCreator(tableContainerDiv, tableCreatorFileUrl, table){
 					}, 0 );
 	 
 				// Update footer columns
-				$( api.column( 7 ).footer() ).html(quantityFilteredTotal +' ('+ quantityTotal +' total)');
-				$( api.column( 8 ).footer() ).html(unitPriceFilteredTotal +' ('+ unitPriceTotal +' total)');
-				$( api.column( 9 ).footer() ).html(fullPriceFilteredTotal +' ('+ fullPriceTotal +' total)');
+				setFooterText(api.column(7).footer(), quantityFilteredTotal, quantityTotal);
+				setFooterText(api.column(8).footer(), unitPriceFilteredTotal, unitPriceTotal);
+				setFooterText(api.column(9).footer(), fullPriceFilteredTotal, fullPriceTotal);
 			}
 		});
 	});
@@ -878,9 +879,9 @@ function filteredSaleReportTableCreator(startDate, endDate, scriptPath, tableDIV
 						}, 0 );
 		 
 					// Update footer columns
-					$( api.column( 7 ).footer() ).html(quantityFilteredTotal +' ('+ quantityTotal +' total)');
-					$( api.column( 8 ).footer() ).html(unitPriceFilteredTotal +' ('+ unitPriceTotal +' total)');
-					$( api.column( 9 ).footer() ).html(fullPriceFilteredTotal +' ('+ fullPriceTotal +' total)');
+					setFooterText(api.column(7).footer(), quantityFilteredTotal, quantityTotal);
+					setFooterText(api.column(8).footer(), unitPriceFilteredTotal, unitPriceTotal);
+					setFooterText(api.column(9).footer(), fullPriceFilteredTotal, fullPriceTotal);
 				}
 			});
 		}
@@ -975,9 +976,9 @@ function filteredPurchaseReportTableCreator(startDate, endDate, scriptPath, tabl
 						}, 0 );
 		 
 					// Update footer columns
-					$( api.column( 6 ).footer() ).html(quantityFilteredTotal +' ('+ quantityTotal +' total)');
-					$( api.column( 7 ).footer() ).html(unitPriceFilteredTotal +' ('+ unitPriceTotal +' total)');
-					$( api.column( 8 ).footer() ).html(fullPriceFilteredTotal +' ('+ fullPriceTotal +' total)');
+					setFooterText(api.column(6).footer(), quantityFilteredTotal, quantityTotal);
+					setFooterText(api.column(7).footer(), unitPriceFilteredTotal, unitPriceTotal);
+					setFooterText(api.column(8).footer(), fullPriceFilteredTotal, fullPriceTotal);
 				}
 			});
 		}
@@ -1030,7 +1031,7 @@ function addCustomer() {
 		},
 		success: function(data){
 			$('#customerDetailsMessage').fadeIn();
-			$('#customerDetailsMessage').html(data);
+			setSafeHTML('#customerDetailsMessage', data);
 		},
 		complete: function(data){
 			populateLastInsertedID(customerLastInsertedIDFile, 'customerDetailsCustomerID');
@@ -1069,7 +1070,7 @@ function addVendor() {
 		},
 		success: function(data){
 			$('#vendorDetailsMessage').fadeIn();
-			$('#vendorDetailsMessage').html(data);
+			setSafeHTML('#vendorDetailsMessage', data);
 		},
 		complete: function(data){
 			populateLastInsertedID(vendorLastInsertedIDFile, 'vendorDetailsVendorID');
@@ -1105,7 +1106,7 @@ function addItem() {
 		},
 		success: function(data){
 			$('#itemDetailsMessage').fadeIn();
-			$('#itemDetailsMessage').html(data);
+			setSafeHTML('#itemDetailsMessage', data);
 		},
 		complete: function(){
 			populateLastInsertedID(itemLastInsertedIDFile, 'itemDetailsProductID');
@@ -1139,7 +1140,7 @@ function addPurchase() {
 		},
 		success: function(data){
 			$('#purchaseDetailsMessage').fadeIn();
-			$('#purchaseDetailsMessage').html(data);
+			setSafeHTML('#purchaseDetailsMessage', data);
 		},
 		complete: function(){
 			getItemStockToPopulate('purchaseDetailsItemNumber', getItemStockFile, 'purchaseDetailsCurrentStock');
@@ -1179,7 +1180,7 @@ function addSale() {
 		},
 		success: function(data){
 			$('#saleDetailsMessage').fadeIn();
-			$('#saleDetailsMessage').html(data);
+			setSafeHTML('#saleDetailsMessage', data);
 		},
 		complete: function(){
 			getItemStockToPopulate('saleDetailsItemNumber', getItemStockFile, 'saleDetailsTotalStock');
@@ -1421,7 +1422,7 @@ function deleteItem(){
 			data: {itemDetailsItemNumber:itemDetailsItemNumber},
 			success: function(data){
 				$('#itemDetailsMessage').fadeIn();
-				$('#itemDetailsMessage').html(data);
+				setSafeHTML('#itemDetailsMessage', data);
 			},
 			complete: function(){
 				searchTableCreator('itemDetailsTableDiv', itemDetailsSearchTableCreatorFile, 'itemDetailsTable');
@@ -1446,7 +1447,7 @@ function deleteCustomer(){
 			data: {customerDetailsCustomerID:customerDetailsCustomerID},
 			success: function(data){
 				$('#customerDetailsMessage').fadeIn();
-				$('#customerDetailsMessage').html(data);
+				setSafeHTML('#customerDetailsMessage', data);
 			},
 			complete: function(){
 				searchTableCreator('customerDetailsTableDiv', customerDetailsSearchTableCreatorFile, 'customerDetailsTable');
@@ -1471,7 +1472,7 @@ function deleteVendor(){
 			data: {vendorDetailsVendorID:vendorDetailsVendorID},
 			success: function(data){
 				$('#vendorDetailsMessage').fadeIn();
-				$('#vendorDetailsMessage').html(data);
+				setSafeHTML('#vendorDetailsMessage', data);
 			},
 			complete: function(){
 				searchTableCreator('vendorDetailsTableDiv', vendorDetailsSearchTableCreatorFile, 'vendorDetailsTable');
@@ -1648,7 +1649,7 @@ function updateItem() {
 		success: function(data){
 			var result = $.parseJSON(data);
 			$('#itemDetailsMessage').fadeIn();
-			$('#itemDetailsMessage').html(result.alertMessage);
+			setSafeHTML('#itemDetailsMessage', result.alertMessage);
 			if(result.newStock != null){
 				$('#itemDetailsTotalStock').val(result.newStock);
 			}
@@ -1695,7 +1696,7 @@ function updateCustomer() {
 		},
 		success: function(data){
 			$('#customerDetailsMessage').fadeIn();
-			$('#customerDetailsMessage').html(data);
+			setSafeHTML('#customerDetailsMessage', data);
 		},
 		complete: function(){
 			searchTableCreator('customerDetailsTableDiv', customerDetailsSearchTableCreatorFile, 'customerDetailsTable');
@@ -1737,7 +1738,7 @@ function updateVendor() {
 		},
 		success: function(data){
 			$('#vendorDetailsMessage').fadeIn();
-			$('#vendorDetailsMessage').html(data);
+			setSafeHTML('#vendorDetailsMessage', data);
 		},
 		complete: function(){
 			searchTableCreator('purchaseDetailsTableDiv', purchaseDetailsSearchTableCreatorFile, 'purchaseDetailsTable');
@@ -1773,7 +1774,7 @@ function updatePurchase() {
 		},
 		success: function(data){
 			$('#purchaseDetailsMessage').fadeIn();
-			$('#purchaseDetailsMessage').html(data);
+			setSafeHTML('#purchaseDetailsMessage', data);
 		},
 		complete: function(){
 			getItemStockToPopulate('purchaseDetailsItemNumber', getItemStockFile, 'purchaseDetailsCurrentStock');
@@ -1814,7 +1815,7 @@ function updateSale() {
 		},
 		success: function(data){
 			$('#saleDetailsMessage').fadeIn();
-			$('#saleDetailsMessage').html(data);
+			setSafeHTML('#saleDetailsMessage', data);
 		},
 		complete: function(){			
 			getItemStockToPopulate('saleDetailsItemNumber', getItemStockFile, 'saleDetailsTotalStock');
